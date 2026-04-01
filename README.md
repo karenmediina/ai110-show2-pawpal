@@ -41,3 +41,7 @@ pip install -r requirements.txt
 5. Add tests to verify key behaviors.
 6. Connect your logic to the Streamlit UI in `app.py`.
 7. Refine UML so it matches what you actually built.
+
+
+### Smarter Scheduling
+With the smarter scheduling, the app can automatically warn you if you try to be in two places at once, like walking the dog and feeding the cat at the exact same time. When you finish a "Daily" task, PawPal instantly creates a new one for tomorrow so you never forget to do a recurring chore. It also helps you prioritize your day by calculating which tasks are the most important to finish within your limited free time. Finally, all your pet's needs are perfectly sorted into a clear timeline from morning to night.

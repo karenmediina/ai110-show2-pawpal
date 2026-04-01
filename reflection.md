@@ -31,6 +31,9 @@ As I began to implement, Copilot and I noticed that it would be better for tasks
 - Why is that tradeoff reasonable for this scenario?
 
 ---
+a. My scheduler manages tasks by balancing a hard time budget against weighted priority levels (high, medium, and low) for each pet. I prioritized these specific constraints because, for a busy owner, the most valuable schedule is one that fits the most important chores into a strictly limited window of free time.
+
+b. One of the trade offs my implementation has is that it just warns you but doesn't automatically solve a problem when there is task conflict. I think it's reasonable because the owner should still have agency about what happens with their pets, based on their own priorities and preferences, instead of the model deciding for them, in case of conflicts.
 
 ## 3. AI Collaboration
 
