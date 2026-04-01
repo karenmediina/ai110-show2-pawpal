@@ -7,22 +7,14 @@ class Task:
     title: str
     duration_minutes: int
     priority: str  # "high", "medium", "low"
+    frequency: str = "Daily"  # ADDED: per requirements
     task_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     is_completed: bool = False
 
     def get_value_density(self, weights: Dict[str, int]) -> float:
         """Calculates score per minute to optimize the schedule."""
         weight = weights.get(self.priority.lower(), 1)
-        # Avoid division by zero, though duration should be > 0
         return weight / max(self.duration_minutes, 1)
-
-@dataclass
-class ScheduledTask:
-    """The result of the scheduling logic."""
-    task: Task
-    pet_name: str
-    start_minute: int
-    reason: str
 
 @dataclass
 class Pet:
@@ -45,21 +37,33 @@ class Owner:
         default_factory=lambda: {"high": 10, "medium": 5, "low": 2}
     )
 
+    def add_pet(self, pet: Pet):
+        self.pets.append(pet)
+
+    # ADDED: This is the "proper" way for the Scheduler to talk to the Owner
+    def get_all_pet_tasks(self) -> List[tuple[Task, str]]:
+        """Retrieves all tasks across all pets for the scheduler."""
+        all_tasks = []
+        for pet in self.pets:
+            for task in pet.tasks:
+                all_tasks.append((task, pet.name))
+        return all_tasks
+
+@dataclass
+class ScheduledTask:
+    task: Task
+    pet_name: str
+    start_minute: int
+    reason: str
+
 class Scheduler:
     def __init__(self, owner: Owner):
         self.owner = owner
 
     def generate_plan(self) -> List[ScheduledTask]:
-        """
-        Implements a Greedy Value-Density algorithm (Heuristic for Knapsack).
-        """
-        # 1. Flatten all tasks with pet context
-        all_entries = []
-        for pet in self.owner.pets:
-            for task in pet.tasks:
-                all_entries.append((task, pet.name))
+        # Refined communication: Asking the owner for the data
+        all_entries = self.owner.get_all_pet_tasks()
 
-        # 2. Sort by Value Density (Score/Duration)
         all_entries.sort(
             key=lambda entry: entry[0].get_value_density(self.owner.priority_weights), 
             reverse=True
@@ -71,15 +75,8 @@ class Scheduler:
 
         for task, pet_name in all_entries:
             if task.duration_minutes <= remaining_budget:
-                reason = f"High value-density: {task.priority} priority in only {task.duration_minutes}m."
-                
-                plan.append(ScheduledTask(
-                    task=task,
-                    pet_name=pet_name,
-                    start_minute=current_time,
-                    reason=reason
-                ))
-                
+                reason = f"High value-density: {task.priority} priority fits in {task.duration_minutes}m."
+                plan.append(ScheduledTask(task, pet_name, current_time, reason))
                 current_time += task.duration_minutes
                 remaining_budget -= task.duration_minutes
         
