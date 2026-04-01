@@ -7,12 +7,16 @@
 - Briefly describe your initial UML design.
 - What classes did you include, and what responsibilities did you assign to each?
 
+From the instructions on the portal, 3 core actions I identified my scheduler shoudl perform are for the owner to add or remove a pet, to give the owner ability to change their priorities/preferences and to generate a daily schedule based on this potentially udpated information. I created 4 classes for this project: owner, pet, task and scheduler. The class owner has attributes like name, daily_available_time and priority weights with which is a dictionary that maps tasks to ints. Their responsabilities include adding a pet, removing a pet and updating their preferences. I also added a class 'pet' which has a name, species and tasks list as attributes. This class can either add or delete a task. The task class has attributes: title, duration (in minutes), a priority assigned to it and a boolean indicated if it was completed or not. Additionally, there is a get_score function that will allow the owner to reprioritize if necessary, based on other constraints like their energy levels and time avaiable. My UML diagram mapped with mermaid is here: ![UML pawpal diagram](image.png)
+
+
 **b. Design changes**
 
 - Did your design change during implementation?
 - If yes, describe at least one change and why you made it.
 
 ---
+As I began to implement, Copilot and I noticed that it would be better for tasks to have unique ID's that way a walk for one pet would not be confused for a walk for another pet. Additionally, in order to include both the optimal task and the reason we chose it, I created a result object that includes both the start time and reason. In the first revsion, I included a scoring ration where the value of the score is the given weight over the num of minutes the the task takes. 
 
 ## 2. Scheduling Logic and Tradeoffs
 
