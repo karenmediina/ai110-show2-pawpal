@@ -11,6 +11,10 @@ class Task:
     task_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     is_completed: bool = False
 
+    def mark_complete(self):
+        """Standard method to update task status."""
+        self.is_completed = True
+
     def get_value_density(self, weights: Dict[str, int]) -> float:
         """Calculates score per minute to optimize the schedule."""
         weight = weights.get(self.priority.lower(), 1)
