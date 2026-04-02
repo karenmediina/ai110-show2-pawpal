@@ -1,9 +1,6 @@
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional
-import uuid
-
 from datetime import datetime, timedelta
-from dataclasses import dataclass, field
 import uuid
 
 @dataclass
@@ -17,10 +14,18 @@ class Task:
     is_completed: bool = False
     task_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
+    def get_value_density(self, priority_weights: Dict[str, int]) -> float:
+        """
+        Calculates how 'worth it' a task is based on its priority vs duration.
+        Higher priority + Shorter time = Higher Density.
+        """
+        # Default to a weight of 1 if priority is unknown
+        weight = priority_weights.get(self.priority.lower(), 1)
+        return weight / self.duration_minutes
+
     def mark_complete(self):
         """
-        Marks current task as done and, if recurring, returns 
-         a fresh instance for the next occurrence.
+        Marks current task as done and, if recurring, returns a fresh instance for the next occurrence.
         """
         self.is_completed = True
         
@@ -135,31 +140,13 @@ class Scheduler:
         return hours * 60 + minutes
 
     def detect_conflicts(self) -> List[str]:
+        """
         Detect overlapping pet care tasks and return human-readable warnings.
         This method inspects all scheduled pet tasks owned by this scheduler, orders
         them by start time, and identifies adjacent tasks whose time windows overlap.
         For each detected overlap it produces a warning string indicating the first
         task, its computed end time, and the second task with its scheduled start time.
-        Returns:
-            List[str]: A list of warning messages. Each message follows the pattern:
-                "⚠️ CONFLICT: '<first_task_title>' (<first_pet>) ends at HH:MM, but
-                 '<second_task_title>' (<second_pet>) starts at <second_task_start>."
-                 (HH:MM is computed from the first task's start time plus its duration;
-                 <second_task_start> is presented as stored on the task.)
-        Notes:
-            - Tasks are presumed to be provided as pairs of (task_object, pet_identifier)
-              where task_object has attributes `start_time` (string "HH:MM") and
-              `duration_minutes` (int).
-            - Overlap detection is performed by converting start times to minutes and
-              checking if the next task's start is strictly less than the current task's
-              end time.
-            - The tasks are sorted before checking; overall complexity is dominated by
-              sorting (O(n log n)) with a linear scan for overlap detection.
-            - No state is mutated; the method only reads tasks and returns warnings.
-        """
-        Identifies overlapping tasks. 
-        Returns a list of warning strings.
-
+        Returns: List[str]: A list of warning messages.
         """
         all_entries = self.owner.get_all_pet_tasks()
         # Sort by time first so we can check neighbors
