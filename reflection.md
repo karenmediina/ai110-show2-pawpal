@@ -84,11 +84,14 @@ b. I'm pretty confident that my scheduler works correctly. I'll say 4.5 stars si
 **a. What went well**
 
 - What part of this project are you most satisfied with?
+I liked the complexity of the task. Thank you for challenging us with a well defined problem. I'm satisified with how algorithms played a role with the scheduler especially because I had seen something similar before in a proofs class for the theory behind the optimal solution. I want to study those algorithms more so I can truly verify what the AI writes for us. 
 
 **b. What you would improve**
 
 - If you had another iteration, what would you improve or redesign?
+If  I had a second iteration, I would try to do it again with less AI to check if I actually learned. Although I am beginning to trust it more I still have a hard time being reliant on it. I'm still in college and my main goal is not efficiency right now but deep understanding. The job market does kind of push us to be both efficient and well knowledgeable but I found that by taking it one step at a time, separately, I can get to both. 
 
 **c. Key takeaway**
 
 - What is one important thing you learned about designing systems or working with AI on this project?
+CLI first approach was really helpful and made testing and debugging a whooole lot smoother. I liked the scaffolding behind the project and would like to develop my own "phases" for future projects to get a feel of what a standard way to break down a big projet is like. 
