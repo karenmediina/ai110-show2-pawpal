@@ -1,106 +1,98 @@
 import streamlit as st
 from pawpal_system import Owner, Pet, Task, Scheduler
+from datetime import datetime
 
 st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="centered")
 
-# --- STEP 2: MANAGE APPLICATION "MEMORY" (SESSION STATE) ---
-# This ensures our Owner and Pet objects persist across reruns
+# --- SESSION STATE (The App's Memory) ---
 if "owner" not in st.session_state:
-    # Create the initial owner and a default pet
+    # Initial setup for Sofia's demo
     initial_owner = Owner(name="Jordan", available_time=60)
-    initial_owner.add_pet(Pet(name="Mochi", species="dog"))
-    
-    # Store the object in the session state "vault"
     st.session_state.owner = initial_owner
 
-# Local reference to the persistent owner object
 owner = st.session_state.owner
+engine = Scheduler(owner)
 
-st.title("PawPal")
+st.title("🐾 PawPal+")
 
-# --- SIDEBAR: OWNER & PET MANAGEMENT ---
+# --- SIDEBAR: PROFILE & PETS ---
 with st.sidebar:
-    st.header("👤 Profile & Settings")
+    st.header("👤 Profile")
     owner.name = st.text_input("Owner Name", value=owner.name)
     owner.available_time = st.number_input("Time Budget (mins)", min_value=0, value=owner.available_time)
     
     st.divider()
-    st.subheader("🐾 Manage Pets")
-    
-    # NEW: Form to add a new Pet object
+    st.subheader("🐱 Manage Pets")
     with st.form("add_pet_form", clear_on_submit=True):
-        new_pet_name = st.text_input("Pet Name")
-        new_pet_species = st.selectbox("Species", ["Dog", "Cat", "Bird", "Other"])
+        new_name = st.text_input("Pet Name")
+        new_species = st.selectbox("Species", ["Dog", "Cat", "Bird", "Other"])
         if st.form_submit_button("Add Pet"):
-            if new_pet_name:
-                # 1. Create the Pet object
-                new_pet = Pet(name=new_pet_name, species=new_pet_species)
-                # 2. Call the Owner method you wrote in Phase 2
-                owner.add_pet(new_pet)
-                st.success(f"Added {new_pet_name}!")
-            else:
-                st.error("Please enter a name.")
+            if new_name:
+                owner.add_pet(Pet(name=new_name, species=new_species))
+                st.rerun()
 
-    # Display the current list of live Pet objects
-    st.write("---")
-    for pet in owner.pets:
-        st.write(f"• **{pet.name}** ({pet.species})")
+# --- CONFLICT DETECTION (New "Smart" Feature) ---
+# We run this at the top so the user sees warnings immediately
+conflicts = engine.detect_conflicts()
+if conflicts:
+    for warning in conflicts:
+        st.warning(warning)
 
 # --- TASK INPUT SECTION ---
-st.subheader("📋 Add Care Tasks")
-
-# Create a list of pet names for the dropdown
-pet_options = [p.name for p in owner.pets]
-selected_pet_name = st.selectbox("Assign to Pet:", pet_options)
-
-col1, col2 = st.columns([2, 1])
-with col1:
-    t_title = st.text_input("Task title", value="Feeding")
-with col2:
-    t_duration = st.number_input("Mins", min_value=1, value=15)
-
-t_priority = st.select_slider("Priority", options=["low", "medium", "high"])
-
-if st.button("Add Task"):
-    # Find the actual Pet object by name
-    target_pet = next(p for p in owner.pets if p.name == selected_pet_name)
-    
-    # Create and add the Task
-    new_task = Task(title=t_title, duration_minutes=int(t_duration), priority=t_priority)
-    target_pet.add_task(new_task)
-    st.toast(f"✅ Assigned to {target_pet.name}!")
-
-# --- DISPLAY CURRENT TASKS (Generalized for all pets) ---
-all_tasks_exist = any(len(p.tasks) > 0 for p in owner.pets)
-
-if all_tasks_exist:
-    st.markdown("### All Pending Tasks")
-    all_table_data = []
-    for pet in owner.pets:
-        for t in pet.tasks:
-            all_table_data.append({
-                "Pet": pet.name,
-                "Task": t.title, 
-                "Duration": f"{t.duration_minutes}m", 
-                "Priority": t.priority
-            })
-    st.table(all_table_data)
+st.subheader("📋 Add a Care Task")
+if not owner.pets:
+    st.info("Add a pet in the sidebar to start scheduling!")
 else:
-    st.info("No tasks added yet. Use the form above to start.")
-
-# --- STEP 3: THE SCHEDULER BRIDGE ---
-st.subheader("Optimized Schedule")
-if st.button("Generate Schedule"):
-    # Pass the owner object (and all their pets/tasks) into the Scheduler
-    engine = Scheduler(owner)
-    plan = engine.generate_plan()
+    pet_names = [p.name for p in owner.pets]
+    selected_pet = st.selectbox("Assign to:", pet_names)
     
-    if not plan:
-        st.warning("No tasks fit in your current time budget. Try adding more time in the sidebar!")
-    else:
-        st.success(f"Schedule generated for {owner.name}!")
-        for entry in plan:
-            # Display each scheduled task in a clean expander
-            with st.expander(f"{entry.start_minute}m - {entry.task.title} ({entry.pet_name})"):
-                st.write(f"**Duration:** {entry.task.duration_minutes} minutes")
-                st.info(f"**Optimization Reason:** {entry.reason}")
+    col1, col2, col3 = st.columns([2, 1, 1])
+    with col1:
+        t_title = st.text_input("Task Title", value="Feeding")
+    with col2:
+        t_time = st.text_input("Start Time (HH:MM)", value="09:00")
+    with col3:
+        t_dur = st.number_input("Mins", min_value=1, value=15)
+    
+    t_freq = st.radio("Frequency", ["Once", "Daily", "Weekly"], horizontal=True)
+    t_prio = st.select_slider("Priority", options=["low", "medium", "high"])
+
+    if st.button("➕ Add Task"):
+        target_pet = next(p for p in owner.pets if p.name == selected_pet)
+        new_task = Task(
+            title=t_title, 
+            duration_minutes=int(t_dur), 
+            priority=t_prio, 
+            start_time=t_time,
+            frequency=t_freq
+        )
+        target_pet.add_task(new_task)
+        st.toast(f"✅ Added {t_title} for {selected_pet}!")
+        st.rerun()
+
+st.divider()
+
+# --- THE SMART SCHEDULE (Reflecting the Algorithmic Layer) ---
+st.subheader("🗓️ Master Timeline")
+all_entries = owner.get_all_pet_tasks()
+
+if all_entries:
+    # Use your Scheduler's sorting logic!
+    sorted_entries = engine.sort_tasks_by_time(all_entries)
+    
+    for task, pet_name in sorted_entries:
+        col_check, col_text = st.columns([1, 9])
+        
+        # Checkbox to trigger the "Recursive Spawning" logic
+        if col_check.checkbox("Done", key=task.task_id):
+            target_pet = next(p for p in owner.pets if p.name == pet_name)
+            target_pet.complete_task_by_id(task.task_id)
+            st.success(f"Great job! {task.title} is complete.")
+            st.rerun()
+            
+        with col_text.expander(f"**{task.start_time}** — {task.title} ({pet_name})"):
+            st.write(f"**Priority:** {task.priority.upper()} | **Duration:** {task.duration_minutes}m")
+            if task.frequency != "Once":
+                st.caption(f"🔁 Recurring: {task.frequency}")
+else:
+    st.info("Your schedule is empty. Add a task above!")
